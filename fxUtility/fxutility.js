@@ -23,11 +23,12 @@ function init() {
     return;
   } else {
     data = JSON.parse(data);
+    console.log(data, "All timers");
   }
 
   for (let index = 0; index < data.length; index++) {
     const element = data[index];
-    data[index] = new Date(element);
+    data[index].date = new Date(element.date);
   }
 
   data = filterOldDates(data);
@@ -35,7 +36,7 @@ function init() {
   data.sort(function (a, b) {
     // Turn your strings into dates, and then subtract them
     // to get a value that is either negative, positive, or zero.
-    return a - b;
+    return a.date - b.date;
   });
 
   localStorage.setItem("fxutility.timers", JSON.stringify(data));
@@ -43,32 +44,30 @@ function init() {
   if (data.length > 0) {
     setAlarm(data[0]);
   }
-
-  console.log(data, "All timers");
 }
 
-function setAlarm(date) {
-  initUiTimer(date);
+function setAlarm(element) {
+  initUiTimer(element);
 
   (function (targetDate) {
     if (targetDate.getTime() <= new Date().getTime()) {
       soundAlarm();
       return;
     }
-    updateUiTimer(date);
+    updateUiTimer(element.date);
     // maybe update a time display here?
     window.setTimeout(arguments.callee, 1000, targetDate); // tick every second
-  })(date);
+  })(element.date);
 }
 
-function initUiTimer(date) {
+function initUiTimer(element) {
   let table = $("#header_info > tbody > tr > td:nth-child(5)").clone();
   table
     .find("a")
     .replaceWith(
-      "<span id='fxutilitytimer' data-endtime='" +
-        +date +
-        "'>Wacht op berekening</span>"
+      "<a href='"+element.link+"' id='fxutilitytimer' data-endtime='" +
+        +element.date +
+        "'>Wacht op berekening</a>"
     );
   table.insertBefore("#header_info > tbody > tr > td:nth-child(4)");
 
@@ -76,7 +75,7 @@ function initUiTimer(date) {
   console.log($timer, "Time span");
   $timer.addClass("timer");
 
-  console.log(date, "Init timer for");
+  console.log(element.date, "Init timer for");
 }
 
 function updateUiTimer(date) {
@@ -88,27 +87,34 @@ function updateUiTimer(date) {
   // get total seconds between the times
   var delta = Math.abs(date - now) / 1000;
 
+  // calculate (and subtract) whole days
+  var days = Math.floor(delta / 86400);
+  delta -= days * 86400;
+
   // calculate (and subtract) whole hours
   var hours = Math.floor(delta / 3600) % 24;
   delta -= hours * 3600;
-  if (hours < 9) {
+  if (hours <= 9) {
     hours = "0" + hours;
   }
 
   // calculate (and subtract) whole minutes
   var minutes = Math.floor(delta / 60) % 60;
   delta -= minutes * 60;
-  if (minutes < 9) {
+  if (minutes <= 9) {
     minutes = "0" + minutes;
   }
 
   // what's left is seconds
   var seconds = Math.floor(delta % 60);
-  if (seconds < 9) {
+  if (seconds <= 9) {
     seconds = "0" + seconds;
   }
-
-  $timer.text(hours + ":" + minutes + ":" + seconds);
+  let dayText = "";
+  if(days > 0){
+    dayText = "+"+days+" ";
+  }
+  $timer.text(dayText + hours + ":" + minutes + ":" + seconds);
 }
 
 function soundAlarm() {
@@ -120,7 +126,7 @@ function filterOldDates(data) {
   let newDates = [];
   for (let index = 0; index < data.length; index++) {
     const element = data[index];
-    if (now < element) {
+    if (now < element.date) {
       if (newDates.map(Number).indexOf(+element) === -1) {
         newDates.push(element);
       }
