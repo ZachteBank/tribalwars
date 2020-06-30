@@ -15,6 +15,7 @@ if (enableTimer != null && enableTimer === "true") {
   init();
 }
 
+
 function init() {
   console.log("Timers init");
   let data = localStorage.getItem("fxutility.timers");

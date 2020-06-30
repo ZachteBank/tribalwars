@@ -1,7 +1,11 @@
-javascript: const header =
-    "[table][**]Start[||]Target[||]Unit[||]Action[||]Launch date and time[/**]";
-const headerNew =
+javascript:
+    console.log("Starting fxutility tool");
+const headerShortNew =
     "[table][**]Start[||]Target[||]Unit[||]Action[||]Launch date and time[||]Link[/**]";
+const headerLong = "[table][**]Start[||]Target[||]Distance[||]Unit[||]Action[||]Arrival date and time[||]Travel time[||]Launch date and time[/**]";
+const headerLongNew = "[table][**]Start[||]Target[||]Distance[||]Unit[||]Action[||]Arrival date and time[||]Travel time[||]Launch date and time[||]Link[/**]";
+const headerShort = "[table][**]Start[||]Target[||]Unit[||]Action[||]Launch date and time[/**]";
+
 
 const settings = {
     automaticSave: true,
@@ -9,6 +13,24 @@ const settings = {
     enableTimer: true,
     removeCoords: true,
 };
+
+const headerTypes = {"short": 1, "long": 2};
+
+function getHeader() {
+    if (settings.headerType === headerTypes.short) {
+        return headerShort;
+    } else {
+        return headerLong;
+    }
+}
+
+function getHeaderWithLink() {
+    if (settings.headerType === headerTypes.short) {
+        return headerShortNew;
+    } else {
+        return headerLongNew;
+    }
+}
 
 if (typeof window.$.twAjax === "undefined") {
     window.$.twAjax = (function () {
@@ -114,11 +136,29 @@ if (game_data.screen !== "memo") {
     text = memo.memo;
     Memo.toggleEdit();
 
-    if (text.includes(header)) {
-        console.log("Header gevonden");
+    if (text.includes(headerShort)) {
+        console.log("Korte header gevonden");
+        settings.dateColumn = 4;
+        settings.columnLength = 6;
+        settings.headerType = headerTypes.short;
         executeCodeAddLink();
         removeOldTimes();
-    } else if (text.includes(headerNew)) {
+    } else if (text.includes(headerLong)) {
+        console.log("Lange header gevonden");
+        settings.dateColumn = 7;
+        settings.columnLength = 9;
+        settings.headerType = headerTypes.long;
+        executeCodeAddLink();
+        removeOldTimes();
+    } else if (text.includes(headerShortNew)) {
+        settings.dateColumn = 4;
+        settings.columnLength = 6;
+        settings.headerType = headerTypes.short;
+        removeOldTimes();
+    } else if (text.includes(headerLongNew)) {
+        settings.dateColumn = 7;
+        settings.columnLength = 9;
+        settings.headerType = headerTypes.long;
         removeOldTimes();
     } else {
         UI.ErrorMessage("Geen tabel gevonden");
@@ -145,12 +185,12 @@ function addToTimer(date, link) {
 }
 
 function removeOldTimes() {
-    let textSplit = text.split(headerNew);
+    let textSplit = text.split(getHeaderWithLink());
     text = textSplit[0];
     let tableSplit = textSplit[1].split("[/table]");
     let table = tableSplit[0];
 
-    text += headerNew;
+    text += getHeaderWithLink();
     text += checkForOldTimes(table);
     text += "[/table]";
     text += tableSplit[1];
@@ -205,7 +245,7 @@ function checkOldTimeWithRow(row) {
     let link = data[data.length - 1];
 
     if (
-        checkValidTime(data[4], (date) => {
+        checkValidTime(data[settings.dateColumn], (date) => {
             addToTimer(date, link);
         })
     ) {
@@ -213,7 +253,7 @@ function checkOldTimeWithRow(row) {
     }
 
     let newRow = "";
-    if (data.length === 6) {
+    if (data.length === settings.columnLength) {
         for (let index = 0; index < data.length - 1; index++) {
             const element = data[index];
 
@@ -236,16 +276,17 @@ function checkOldTimeWithRow(row) {
 }
 
 function executeCodeAddLink() {
-    let textSplit = text.split(header);
+    let textSplit = text.split(getHeader());
     text = textSplit[0];
     let tableSplit = textSplit[1].split("[/table]");
     let table = tableSplit[0];
 
-    text += header.replace("[/**]", "[||]Link[/**]");
+    text += getHeader().replace("[/**]", "[||]Link[/**]");
     text += addAttackButton(table);
     text += "[/table]";
-    text += tableSplit[1];
-
+    if (tableSplit[1]) {
+        text += tableSplit[1];
+    }
     $("#message_" + selected).val(text);
     UI.SuccessMessage("Knop is toegevoegd");
 }
