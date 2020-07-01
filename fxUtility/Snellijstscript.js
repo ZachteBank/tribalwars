@@ -349,15 +349,34 @@ function getVillageIdWithCoords(coords) {
         coords[1] +
         "&type=coord&request_id=1&limit=1&offset=0";
     let id = 0;
+
     $.twAjax({
         url: ajaxUrlReal,
         async: false,
+        tryCount : 0,
+        retryLimit : 3,
         success: function (data) {
             data = JSON.parse(data);
             if (data.villages.length > 0) {
                 id = data.villages[0].id;
             }
         },
+        error : function(xhr, textStatus, errorThrown ) {
+            if (xhr.status === 429 || textStatus === 'timeout') {
+                this.tryCount++;
+                if (this.tryCount <= this.retryLimit) {
+                    //try again
+                    $.ajax(this);
+                    return;
+                }
+                return;
+            }
+            if (xhr.status === 500) {
+                //handle error
+            } else {
+                //handle error
+            }
+        }
     });
 
     return id;
