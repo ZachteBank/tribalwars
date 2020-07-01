@@ -277,7 +277,11 @@ function checkOldTimeWithRow(row) {
         if (settings.removeLink) {
             newRow += "Te laat";
         } else {
-            newRow += "[s]" + data[data.length - 1] + "[/s]";
+            if(!data[data.length-1].includes("[s]")){
+                newRow += "[s]" + data[data.length - 1] + "[/s]";
+            }else{
+                newRow += data[data.length-1];
+            }
         }
     } else {
         console.log("No link found");
