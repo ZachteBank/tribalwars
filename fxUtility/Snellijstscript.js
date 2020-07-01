@@ -126,13 +126,28 @@ let selected, memo, text;
 if (game_data.screen !== "memo") {
     UI.ErrorMessage("Dit script werkt alleen in notities");
 } else {
-    localStorage.setItem("fxutility.timers", JSON.stringify([]));
 
     selected = $(".memo-tab-selected").attr("id");
 
     selected = selected.replace("tab_", "");
     console.log(selected);
     memo = findObjectInArrayByProperty(Memo.tabs, "id", selected);
+
+    let activeTimers = JSON.parse(localStorage.getItem("fxutility.timers"));
+    if (!activeTimers) {
+        activeTimers = [];
+    }
+    let timer = findObjectInArrayByProperty(activeTimers, "id", selected);
+    if (timer) {
+
+    } else {
+        activeTimers.push({id: selected, "name": memo.title});
+    }
+
+    localStorage.setItem("fxutility.timers", JSON.stringify(activeTimers));
+
+    localStorage.setItem("fxutility.timers." + selected, JSON.stringify([]));
+
     text = memo.memo;
     Memo.toggleEdit();
 
@@ -176,11 +191,11 @@ function enableTimer() {
 }
 
 function addToTimer(date, link) {
-    data = JSON.parse(localStorage.getItem("fxutility.timers"));
+    data = JSON.parse(localStorage.getItem("fxutility.timers." + selected));
     link = link.replace("[url=", "").replace("]Aanvallen[/url]", "");
     let combined = {date: date, link: link};
     data.push(combined);
-    localStorage.setItem("fxutility.timers", JSON.stringify(data));
+    localStorage.setItem("fxutility.timers." + selected, JSON.stringify(data));
     console.log(data, "New set of timers");
 }
 
@@ -353,15 +368,15 @@ function getVillageIdWithCoords(coords) {
     $.twAjax({
         url: ajaxUrlReal,
         async: false,
-        tryCount : 0,
-        retryLimit : 3,
+        tryCount: 0,
+        retryLimit: 3,
         success: function (data) {
             data = JSON.parse(data);
             if (data.villages.length > 0) {
                 id = data.villages[0].id;
             }
         },
-        error : function(xhr, textStatus, errorThrown ) {
+        error: function (xhr, textStatus, errorThrown) {
             if (xhr.status === 429 || textStatus === 'timeout') {
                 this.tryCount++;
                 if (this.tryCount <= this.retryLimit) {
