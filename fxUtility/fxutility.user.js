@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.5
 // @description  try to take over the world!
 // @author       Extremez
 // @include https://*.tribalwars.nl/*

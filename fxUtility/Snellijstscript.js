@@ -9,6 +9,7 @@ const headerShort = "[table][**]Start[||]Target[||]Unit[||]Action[||]Launch date
 
 const settings = {
     automaticSave: true,
+    deleteRow: false,
     removeLink: false,
     enableTimer: true,
     removeCoords: true,
@@ -223,7 +224,10 @@ function checkForOldTimes(tableString) {
     let parsedRows = tableString.split("[*]");
     parsedRows.shift();
     for (let parsedRow of parsedRows) {
-        text += "[*]" + checkOldTimeWithRow(parsedRow);
+        let row = checkOldTimeWithRow(parsedRow);
+        if (row != null) {
+            text += "[*]" + row;
+        }
     }
     return text;
 }
@@ -266,31 +270,34 @@ function checkOldTimeWithRow(row) {
     ) {
         return row;
     }
+    if (!settings.removeLink) {
+        let newRow = "";
+        if (data.length === settings.columnLength) {
+            for (let index = 0; index < data.length - 1; index++) {
+                const element = data[index];
 
-    let newRow = "";
-    if (data.length === settings.columnLength) {
-        for (let index = 0; index < data.length - 1; index++) {
-            const element = data[index];
-
-            newRow += element + "[|]";
-        }
-        if (settings.removeLink) {
-            newRow += "Te laat";
-        } else {
-            if(!data[data.length-1].includes("[s]")){
-                newRow += "[s]" + data[data.length - 1] + "[/s]";
-            }else{
-                newRow += data[data.length-1];
+                newRow += element + "[|]";
             }
+            if (settings.removeLink) {
+                newRow += "Te laat";
+            } else {
+                if (!data[data.length - 1].includes("[s]")) {
+                    newRow += "[s]" + data[data.length - 1] + "[/s]";
+                } else {
+                    newRow += data[data.length - 1];
+                }
+            }
+        } else {
+            console.log("No link found");
+        }
+        console.log(newRow, "newRow");
+        if (newRow.length > 0) {
+            return newRow;
+        } else {
+            return row;
         }
     } else {
-        console.log("No link found");
-    }
-    console.log(newRow, "newRow");
-    if (newRow.length > 0) {
-        return newRow;
-    } else {
-        return row;
+        return null;
     }
 }
 
