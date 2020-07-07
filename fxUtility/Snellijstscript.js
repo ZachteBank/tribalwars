@@ -9,8 +9,7 @@ const headerShort = "[table][**]Start[||]Target[||]Unit[||]Action[||]Launch date
 
 const settings = {
     automaticSave: true,
-    deleteRow: false,
-    removeLink: false,
+    removeLink: true,
     enableTimer: true,
     removeCoords: true,
 };
@@ -138,10 +137,14 @@ if (game_data.screen !== "memo") {
     if (!activeTimers) {
         activeTimers = [];
     }
-    let timer = findObjectInArrayByProperty(activeTimers, "id", selected);
-    if (timer) {
-
-    } else {
+    let found = false;
+    for (const activeTimer of activeTimers) {
+        if(activeTimer.id === selected){
+            activeTimer.name = memo.title;
+            found = true;
+        }
+    }
+    if(!found){
         activeTimers.push({id: selected, "name": memo.title});
     }
 
