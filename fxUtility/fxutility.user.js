@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.8
+// @version      0.8.2
 // @description  try to take over the world!
 // @author       Extremez
 // @include https://*.tribalwars.nl/*
@@ -9,7 +9,6 @@
 // ==/UserScript==
 
 const settings = {
-    bigBlock: true,
     maxTimers: 5,
 }
 const scriptLink = "https://zachtebank.github.io/tribalwars/fxUtility/Snellijstscript.min.js";
@@ -65,10 +64,11 @@ function createBlockElement() {
  * START MEMO
  */
 if (game_data.screen === "memo") {
-    $("#linkContainer").append("<a id='fxutilitysettings' href='#'> - Fxutility settings</a>");
+    $("#linkContainer").append("<a class='fxutilitysettings' href='#'> - Fxutility settings</a>");
+    $(".rename_link").after("<a class='btn fxutilitysettings' href='#'>Load fxutility table</a>");
 }
 
-$("#fxutilitysettings").on("click", function () {
+$(".fxutilitysettings").on("click", function () {
     console.log("executing getScript");
     $.getScript(scriptLink);
 });
@@ -79,9 +79,8 @@ $("#fxutilitysettings").on("click", function () {
 
 let enableTimer = localStorage.getItem("fxutility.enableTimer");
 if (enableTimer != null && enableTimer === "true") {
-    if (settings.bigBlock) {
-        createBlockElement();
-    }
+    createBlockElement();
+
     let data = localStorage.getItem("fxutility.timers");
 
     if (data == null || !(data.length > 0)) {
@@ -89,8 +88,20 @@ if (enableTimer != null && enableTimer === "true") {
     } else {
         data = JSON.parse(data);
         console.log(data, "All timers");
+        let allTimersEmpty = true;
+        let newData = [];
         for (let timer of data) {
-            init(timer);
+            if(init(timer)){
+                allTimersEmpty = false;
+                newData.push(timer);
+            }
+        }
+        console.log(newData, "deleted data");
+        localStorage.setItem("fxutility.timers", JSON.stringify(newData));
+
+        if(allTimersEmpty){
+            console.log("Table is empty!")
+            $blockElement.remove();
         }
         //sortTable($blockElement.find("table"), 'asc');
     }
@@ -120,7 +131,7 @@ function init(timer) {
     let data = localStorage.getItem("fxutility.timers." + timer.id);
     if (data == null || !(data.length > 0)) {
         console.log("Geen timers ingesteld");
-        return;
+        return false;
     } else {
         data = JSON.parse(data);
     }
@@ -146,7 +157,10 @@ function init(timer) {
         for (let i = 0; i < max; i++) {
             setAlarm(data[i], timer);
         }
+    }else{
+        return false;
     }
+    return true;
 }
 
 function setAlarm(element, memo) {
@@ -165,10 +179,11 @@ function setAlarm(element, memo) {
 }
 
 var currentNote = "";
+
 function initUiTimer(element, memo, key) {
     let tmpTable = $blockElement.find("table");
 
-    if(memo.name !== currentNote) {
+    if (memo.name !== currentNote) {
         tmpTable.append("<tr><td><h4 style='margin-top:5px'>" + memo.name + "</h4></td></tr>")
         currentNote = memo.name;
     }
