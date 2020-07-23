@@ -346,7 +346,7 @@ function parseRow(row) {
         row = row.replace(/\[coord]/g, "").replace(/\[\/coord]/g, "");
     }
 
-    let buttonUrl = generateButton(start, target);
+    let buttonUrl = generateButtonUrl(start, target);
     row += "[|]" + setCorrectUrlToHtml(buttonUrl);
     console.log(row, "Row");
     return row;
@@ -356,7 +356,7 @@ function setCorrectUrlToHtml(url) {
     return "[url=" + url + "]Aanvallen[/url]";
 }
 
-function generateButton(start, target) {
+function generateButtonUrl(start, target) {
     let url = "game.php?village=%START%&screen=place&target=%TARGET%";
     if (game_data.player.sitter !== "0") {
         url += "&t=" + game_data.player.id + "";
