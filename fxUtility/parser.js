@@ -1,7 +1,9 @@
 console.log("Start parsing table");
-
+const settings = {
+    "debug": true,
+}
 /**
- * Start twAjax stuff
+ * Start twAjax and utility stuff
  */
 if (typeof window.$.twAjax === "undefined") {
     window.$.twAjax = (function () {
@@ -91,9 +93,23 @@ if (typeof window.$.twAjax === "undefined") {
         };
     })();
 }
+function findObjectInArrayByProperty(array, propertyName, propertyValue) {
+    return array.find((o) => {
+        return o[propertyName] === propertyValue;
+    });
+}
 
+function log(obj, name = null) {
+    if(settings.debug){
+        if(name !== null) {
+            console.log(obj, name);
+        }else{
+            console.log(obj);
+        }
+    }
+}
 /**
- * End twAjax stuff
+ * End twAjax and utility stuff
  */
 
 class Note {
@@ -122,9 +138,11 @@ class Attack {
 class Parser {
     static parseMemo(text) {
         if (FxUtilityParser.isFxUitlityTable(text)) {
-            return new FxUtilityParser(text);
+            log("")
+            return new FxUtilityParser(text).parsedText;
         }
         //add other parsers
+        return text;
     }
 }
 
@@ -145,6 +163,8 @@ class FxUtilityParser {
         this.originalText = text;
         this.parsedText = text;
         this.removeUselessTableInfo();
+        console.log(this.originalText, "Original text");
+        console.log(this.parsedText, "Parsed text");
     }
 
     removeUselessTableInfo() {
@@ -188,7 +208,7 @@ class FxUtilityParser {
             if (!(splittedRow.length === 7 || splittedRow.length === 4)) {
                 console.log("Header count isn't correct");
             }
-            text += "[*]" + splittedRow[0] + "[|]" + splittedRow[1] + "[|]" + splittedRow[splittedRow.length - 1] + "\n";
+            text += "[*]" + splittedRow[0] + "[|]" + splittedRow[1] + "[|]" + splittedRow[splittedRow.length - 1];
         }
         return text;
     }
@@ -204,5 +224,18 @@ class FxUtilityParser {
     }
 }
 
+let selected = $(".memo-tab-selected").attr("id");
 
+selected = selected.replace("tab_", "");
+console.log(selected);
+let memo = findObjectInArrayByProperty(Memo.tabs, "id", selected);
+let text = memo.memo;
+Memo.toggleEdit();
+
+let parser = Parser.parseMemo(text);
+
+$("#message_" + selected).val(parser);
+console.log(parser, "The parser");
+
+//$("#submit_memo_" + selected).click();
 
