@@ -1,16 +1,17 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.8.2
+// @version      0.9.1
 // @description  try to take over the world!
 // @author       Extremez
 // @include https://*.tribalwars.nl/*
 // @grant       GM_notification
 // ==/UserScript==
 
-const settings = {
+const userSettings = {
     maxTimers: 5,
 }
+const localStoragePrefix = "fxutility." + game_data.world + "." + game_data.player.id + ".";
 const scriptLink = "https://zachtebank.github.io/tribalwars/fxUtility/Snellijstscript.min.js";
 const parserLink = "https://bramkempen.nl/tribalwars/parser.js";
 let $blockElement = null;
@@ -54,7 +55,6 @@ function createBlockElement() {
     $("#main_layout").after("<div id='fxutilitytimerblock' class='content-border'><table><tbody></tbody></table></div>")
     $blockElement = $("#fxutilitytimerblock");
     $blockElement.css(css);
-
 }
 
 /**
@@ -66,7 +66,8 @@ function createBlockElement() {
  */
 if (game_data.screen === "memo") {
     $("#linkContainer").append("<a class='fxutilitysettings' href='#'> - Fxutility settings</a>");
-    $(".rename_link").after("<a class='btn fxutilitysettings' href='#'>Load fxutility table</a><a class='btn parser' href='#'>Parse planning</a>");
+    $(".rename_link").after("<a class='btn parser' href='#'>Genereer timer en link</a>" +
+        "<a class='btn fxutilitysettings' href='#'>Genereer link (OUD)</a>");
 }
 
 $(".fxutilitysettings").on("click", function () {
@@ -79,15 +80,43 @@ $(".parser").on("click", function () {
     $.getScript(parserLink);
 });
 
+$(document).on("click", ".deleteTimer", function () {
+    let memoId = $(this).data("key");
+    let hash = $(this).data("hash");
+
+    let data = localStorage.getItem(localStoragePrefix + "timers." + memoId);
+    if (data == null || !(data.length > 0)) {
+        console.log("Geen timers gevonden voor te verwijderen");
+        return false;
+    } else {
+        data = JSON.parse(data);
+    }
+
+    for (let index = 0; index < data.length; index++) {
+        const element = data[index];
+        if (hash === element.link.hashCode()) {
+            //console.log(element);
+            data[index] = null;
+            console.log(data[index]);
+            console.log(element, "element to delete");
+        }
+    }
+
+    data = data.filter((obj) => obj);
+
+    localStorage.setItem(localStoragePrefix + "timers." + memoId, JSON.stringify(data));
+    $(this).closest("tr").remove();
+})
+
 /**
  * END MEMO
  */
 
-let enableTimer = localStorage.getItem("fxutility.enableTimer");
+let enableTimer = localStorage.getItem(localStoragePrefix + "enableTimer");
 if (enableTimer != null && enableTimer === "true") {
     createBlockElement();
 
-    let data = localStorage.getItem("fxutility.timers");
+    let data = localStorage.getItem(localStoragePrefix + "timers");
 
     if (data == null || !(data.length > 0)) {
         console.log("Geen timers ingesteld");
@@ -97,15 +126,15 @@ if (enableTimer != null && enableTimer === "true") {
         let allTimersEmpty = true;
         let newData = [];
         for (let timer of data) {
-            if(init(timer)){
+            if (init(timer)) {
                 allTimersEmpty = false;
                 newData.push(timer);
             }
         }
         console.log(newData, "deleted data");
-        localStorage.setItem("fxutility.timers", JSON.stringify(newData));
+        localStorage.setItem(localStoragePrefix + "timers", JSON.stringify(newData));
 
-        if(allTimersEmpty){
+        if (allTimersEmpty) {
             console.log("Table is empty!")
             $blockElement.remove();
         }
@@ -116,7 +145,7 @@ if (enableTimer != null && enableTimer === "true") {
 
 function init(timer) {
     console.log("Timers init " + timer.id + " - " + timer.name);
-    let data = localStorage.getItem("fxutility.timers." + timer.id);
+    let data = localStorage.getItem(localStoragePrefix + "timers." + timer.id);
     if (data == null || !(data.length > 0)) {
         console.log("Geen timers ingesteld");
         return false;
@@ -126,6 +155,7 @@ function init(timer) {
 
     for (let index = 0; index < data.length; index++) {
         const element = data[index];
+        //console.log(element);
         data[index].date = new Date(element.date);
     }
 
@@ -137,15 +167,16 @@ function init(timer) {
         return a.date - b.date;
     });
 
-    localStorage.setItem("fxutility.timers." + timer.id, JSON.stringify(data));
+    localStorage.setItem(localStoragePrefix + "timers." + timer.id, JSON.stringify(data));
 
     if (data.length > 0) {
-        let max = data.length > settings.maxTimers ? settings.maxTimers : data.length;
+        let max = data.length > userSettings.maxTimers ? userSettings.maxTimers : data.length;
         console.log(max, "Max timers");
         for (let i = 0; i < max; i++) {
             setAlarm(data[i], timer);
         }
-    }else{
+    } else {
+        console.log("Geen timers overgebleven");
         return false;
     }
     return true;
@@ -175,7 +206,14 @@ function initUiTimer(element, memo, key) {
         tmpTable.append("<tr><td><h4 style='margin-top:5px'>" + memo.name + "</h4></td></tr>")
         currentNote = memo.name;
     }
-    tmpTable.append("<tr><td><a title='" + memo.name + "' href='" + element.link + "' class='timer" + key + "'>timer</a></td></tr>")
+    tmpTable.append("<tr>" +
+        "<td>" +
+        "<a title='" + memo.name + "' href='" + element.link + "' class='timer" + key + "'>" +
+        "timer" +
+        "</a>" +
+        " | <a href='#' data-key='" + memo.id + "' data-hash='" + element.link.hashCode() + "' class='deleteTimer'>del</a>" +
+        "</td>" +
+        "</tr>")
     $timer[key] = tmpTable.find(".timer" + key);
 }
 
@@ -242,4 +280,112 @@ function filterOldDates(data) {
         }
     }
     return newDates;
+}
+
+/**
+ *  Start confirm enhancer
+ *  credits to Warre for the base version
+ */
+
+function formatTimes(e, addYear = false) {
+    function t(e) {
+        for (var t = "" + e; t.length < 2;) t = "0" + t;
+        return t
+    }
+    var n = new Date(1e3 * e);
+    if(addYear){
+        return t(n.getDate()) + "-" + t(n.getMonth() + 1)+ "-" + t(n.getYear()) + " " + t(n.getHours()) + ":" + t(n.getMinutes()) + ":" + t(n.getSeconds())
+    }
+    return t(n.getDate()) + "." + t(n.getMonth() + 1) + " " + t(n.getHours()) + ":" + t(n.getMinutes()) + ":" + t(n.getSeconds())
+}
+
+function generateAttacks(){
+    $.get($('.village_anchor').first().find('a').first().attr('href'), function(html) {
+        var $cc = $(html).find('.commands-container');
+        if ($cc.length > 0) {
+            var w = (game_data.screen == 'map') ? '100%' : ($('#content_value').width() - $('#command-data-form').find('table').first().width() - 10) + 'px';
+            $('#command-data-form').find('table').first().css('float', 'left').find('tr').last().after('<tr><td>Verstuur:</td><td class="sendTime">-</td>').closest('table').after($cc.find('table').parent().html() + '<br><div style="clear:both;"></div>').next().css({
+                'float': 'right',
+                'width': w,
+                'display': 'block',
+                'max-height': $('#command-data-form').find('table').first().height(),
+                'overflow': 'scroll'
+            }).find('tr.command-row').on('click', function() {
+                var $this = $(this),
+                    duration = $('#command-data-form').find('table').find('td:contains("Duur:")').next().text().trim().split(':'),
+                    sendTime = parseInt($this.find('span.timer').data('endtime')) - ((parseInt(duration[0]) * 3600) + (parseInt(duration[1]) * 60) + parseInt(duration[2]));
+                $this.closest('table').find('td').css('background-color', '');
+                $this.find('td').css('background-color', '#FFF68F');
+                $('.sendTime').html(formatTimes(sendTime) + ' (<span class="sendTimer" data-endtime="' + sendTime + '"></span>)');
+                console.log(new Date(1e3 * sendTime));
+                addToFxTimer(sendTime);
+                Timing.tickHandlers.timers.initTimers('sendTimer');
+                document.title = formatTimes(sendTime);
+            }).filter(function() {
+                return $('img[src*="/return_"], img[src*="/back.png"]', this).length > 0;
+            }).remove();
+            $('.widget-command-timer').addClass('timer');
+            Timing.tickHandlers.timers.initTimers('widget-command-timer');
+        }
+    });
+}
+
+
+function saveNote() {
+    let activeTimers = JSON.parse(localStorage.getItem(localStoragePrefix + "timers"));
+    if (!activeTimers) {
+        activeTimers = [];
+    }
+    let found = false;
+    for (const activeTimer of activeTimers) {
+        if (activeTimer.id === 2) {
+            activeTimer.name = "Confirm enhancer";
+            found = true;
+        }
+    }
+    if (!found) {
+        activeTimers.push({id: 2, "name": "Confirm enhancer"});
+    }
+    console.log(activeTimers, "added timer name");
+    localStorage.setItem(localStoragePrefix + "timers", JSON.stringify(activeTimers));
+}
+
+function addToFxTimer(sendTime){
+    saveNote();
+    let date = new Date(1e3 * sendTime);
+
+    let data = JSON.parse(localStorage.getItem(localStoragePrefix + "timers.2"));
+    if(data === null){
+        data = [];
+    }
+    console.log($("#ctx_place"), "target village");
+    ///game.php?village=1699&screen=info_village&id=3800
+    ///game.php?village=1699&screen=place&target=3800&
+    let link = $("#command-data-form > div:nth-child(8) > table:nth-child(1) > tbody > tr:nth-child(2) > td:nth-child(2) > span > a:nth-child(1)").attr("href");
+    link = link.replace("info_village&id", "place&target");
+    data.push({date: date, link: link});
+    localStorage.setItem(localStoragePrefix + "timers.2", JSON.stringify(data));
+    console.log(data, "Added timer");
+}
+
+if ((game_data.screen == 'map' || game_data.screen == 'place') && $('#place_confirm_units').length > 0 && $('.sendTime').length == 0) {
+    generateAttacks();
+
+}else if(game_data.screen == 'map'){
+    var checkExist = setInterval(function() {
+        if ($('#popup_box_popup_command').length) {
+            console.log("Exists!");
+            clearInterval(checkExist);
+
+            var secondCheck = setInterval(function() {
+                if ($('#place_confirm_units').length) {
+                    console.log("Sending attack!");
+                    clearInterval(secondCheck);
+
+
+                    generateAttacks();
+                }
+            }, 100); // check every 100ms
+        }
+    }, 100); // check every 100ms
 }

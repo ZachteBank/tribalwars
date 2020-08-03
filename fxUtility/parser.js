@@ -3,7 +3,9 @@ const settings = {
     "debug": true,
 }
 
-const localStoragePrefix = "fxUtility." + game_data.world + "." + game_data.player.id;
+if (!localStoragePrefix) {
+    const localStoragePrefix = "fxutility." + game_data.world + "." + game_data.player.id + ".";
+}
 /**
  * Start twAjax and utility stuff
  */
@@ -129,6 +131,37 @@ class Note {
         this.schedule = new Schedule(text);
         this.text = this.schedule.getFormattedText();
 
+        this.saveNote();
+        this.saveAttack();
+    }
+
+    saveNote() {
+        let activeTimers = JSON.parse(localStorage.getItem(localStoragePrefix + "timers"));
+        if (!activeTimers) {
+            activeTimers = [];
+        }
+        let found = false;
+        for (const activeTimer of activeTimers) {
+            if (activeTimer.id === this.id) {
+                activeTimer.name = this.name;
+                found = true;
+            }
+        }
+        if (!found) {
+            activeTimers.push({id: this.id, "name": this.name});
+        }
+
+        localStorage.setItem(localStoragePrefix + "timers", JSON.stringify(activeTimers));
+    }
+
+    saveAttack() {
+        localStorage.setItem(localStoragePrefix + "timers." + this.id, JSON.stringify([]));
+        let data = [];
+        for (let attack of this.schedule.attacks) {
+            data.push(attack.getStorageObj());
+        }
+        localStorage.setItem(localStoragePrefix + "timers." + this.id, JSON.stringify(data));
+        console.log(data, "New set of timers");
     }
 }
 
@@ -170,14 +203,14 @@ class Schedule {
     checkIfDateIsOutdated(timeString) {
         timeString = timeString.split(".")[0];
         var d1 = new Date();
-        var d2 = this.getDateFromString(timeString);
+        var d2 = Schedule.getDateFromString(timeString);
         if (+d1 < +d2) {
             return true;
         }
         return false;
     }
 
-    getDateFromString(stringDate) {
+    static getDateFromString(stringDate) {
         var splitDateTime = stringDate.split(" "); //separate date and time
         var splitDate = splitDateTime[0].split("-"); //separate each digit in the date
         var splitTime = splitDateTime[1].split(":"); //separate each digit in the time
@@ -199,7 +232,7 @@ class Attack {
     constructor(village, target, sendTime, link, unit = null) {
         this.village = village;
         this.target = target;
-        this.sendTime = sendTime;
+        this.sendTime = sendTime.replace(/(\r\n|\n|\r)/gm, "");
         this.link = link;
         this.unit = unit;
     }
@@ -214,6 +247,11 @@ class Attack {
 
     addCoords(string) {
         return "[coord]" + string + "[/coord]";
+    }
+
+    getStorageObj() {
+        let link = this.link.replace("[url=", "").replace("]Aanvallen[/url]", "");
+        return {date: Schedule.getDateFromString(this.sendTime), link: link};
     }
 
 }
@@ -451,8 +489,8 @@ let memo = findObjectInArrayByProperty(Memo.tabs, "id", selected);
 let note = new Note(memo.id, memo.title, memo.memo);
 
 Memo.toggleEdit();
-
+localStorage.setItem(localStoragePrefix + "enableTimer", true);
 $("#message_" + selected).val(note.text);
 
-//$("#submit_memo_" + selected).click();
+$("#submit_memo_" + selected).click();
 
