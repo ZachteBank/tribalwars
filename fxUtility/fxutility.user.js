@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.9.1
+// @version      0.9.3
 // @description  try to take over the world!
 // @author       Extremez
 // @include https://*.tribalwars.nl/*
@@ -99,6 +99,7 @@ $(document).on("click", ".deleteTimer", function () {
             data[index] = null;
             console.log(data[index]);
             console.log(element, "element to delete");
+            continue;
         }
     }
 
@@ -292,15 +293,16 @@ function formatTimes(e, addYear = false) {
         for (var t = "" + e; t.length < 2;) t = "0" + t;
         return t
     }
+
     var n = new Date(1e3 * e);
-    if(addYear){
-        return t(n.getDate()) + "-" + t(n.getMonth() + 1)+ "-" + t(n.getYear()) + " " + t(n.getHours()) + ":" + t(n.getMinutes()) + ":" + t(n.getSeconds())
+    if (addYear) {
+        return t(n.getDate()) + "-" + t(n.getMonth() + 1) + "-" + t(n.getYear()) + " " + t(n.getHours()) + ":" + t(n.getMinutes()) + ":" + t(n.getSeconds())
     }
     return t(n.getDate()) + "." + t(n.getMonth() + 1) + " " + t(n.getHours()) + ":" + t(n.getMinutes()) + ":" + t(n.getSeconds())
 }
 
-function generateAttacks(){
-    $.get($('.village_anchor').first().find('a').first().attr('href'), function(html) {
+function generateAttacks() {
+    $.get($('.village_anchor').first().find('a').first().attr('href'), function (html) {
         var $cc = $(html).find('.commands-container');
         if ($cc.length > 0) {
             var w = (game_data.screen == 'map') ? '100%' : ($('#content_value').width() - $('#command-data-form').find('table').first().width() - 10) + 'px';
@@ -310,7 +312,7 @@ function generateAttacks(){
                 'display': 'block',
                 'max-height': $('#command-data-form').find('table').first().height(),
                 'overflow': 'scroll'
-            }).find('tr.command-row').on('click', function() {
+            }).find('tr.command-row').on('click', function () {
                 var $this = $(this),
                     duration = $('#command-data-form').find('table').find('td:contains("Duur:")').next().text().trim().split(':'),
                     sendTime = parseInt($this.find('span.timer').data('endtime')) - ((parseInt(duration[0]) * 3600) + (parseInt(duration[1]) * 60) + parseInt(duration[2]));
@@ -321,7 +323,7 @@ function generateAttacks(){
                 addToFxTimer(sendTime);
                 Timing.tickHandlers.timers.initTimers('sendTimer');
                 document.title = formatTimes(sendTime);
-            }).filter(function() {
+            }).filter(function () {
                 return $('img[src*="/return_"], img[src*="/back.png"]', this).length > 0;
             }).remove();
             $('.widget-command-timer').addClass('timer');
@@ -350,12 +352,12 @@ function saveNote() {
     localStorage.setItem(localStoragePrefix + "timers", JSON.stringify(activeTimers));
 }
 
-function addToFxTimer(sendTime){
+function addToFxTimer(sendTime) {
     saveNote();
     let date = new Date(1e3 * sendTime);
 
     let data = JSON.parse(localStorage.getItem(localStoragePrefix + "timers.2"));
-    if(data === null){
+    if (data === null) {
         data = [];
     }
     console.log($("#ctx_place"), "target village");
@@ -371,13 +373,13 @@ function addToFxTimer(sendTime){
 if ((game_data.screen == 'map' || game_data.screen == 'place') && $('#place_confirm_units').length > 0 && $('.sendTime').length == 0) {
     generateAttacks();
 
-}else if(game_data.screen == 'map'){
-    var checkExist = setInterval(function() {
+} else if (game_data.screen == 'map') {
+    var checkExist = setInterval(function () {
         if ($('#popup_box_popup_command').length) {
             console.log("Exists!");
             clearInterval(checkExist);
 
-            var secondCheck = setInterval(function() {
+            var secondCheck = setInterval(function () {
                 if ($('#place_confirm_units').length) {
                     console.log("Sending attack!");
                     clearInterval(secondCheck);
@@ -389,3 +391,34 @@ if ((game_data.screen == 'map' || game_data.screen == 'place') && $('#place_conf
         }
     }, 100); // check every 100ms
 }
+
+/**
+ *  End confirm enhancer
+ *  credits to Warre for the base version
+ */
+
+/**
+ *  Start with adding a group on the OS page
+ *  Screen=place & mode=units
+ */
+if (game_data.screen === 'place' && game_data.mode === "units") {
+    console.log("Adding group info");
+    let table = $("#units_home");
+    table.find('tr:first').append("<td>TEST</td>");
+    let i = 0;
+    let rows = table.find("tr");
+    rows.each(function (index, tr) {
+        i++;
+        if (i > 2 && index !== rows.length - 1) {
+            $(this).append("test?");
+        } else {
+            $(this.append("placeholder"));
+        }
+    });
+}
+
+
+/**
+ *  End with adding a group on the OS page
+ *  Screen=place & mode=units
+ */

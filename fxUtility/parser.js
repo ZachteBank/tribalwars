@@ -3,9 +3,7 @@ const settings = {
     "debug": true,
 }
 
-if (!localStoragePrefix) {
-    const localStoragePrefix = "fxutility." + game_data.world + "." + game_data.player.id + ".";
-}
+const localStoragePrefixParser = "fxutility." + game_data.world + "." + game_data.player.id + ".";
 /**
  * Start twAjax and utility stuff
  */
@@ -136,7 +134,7 @@ class Note {
     }
 
     saveNote() {
-        let activeTimers = JSON.parse(localStorage.getItem(localStoragePrefix + "timers"));
+        let activeTimers = JSON.parse(localStorage.getItem(localStoragePrefixParser + "timers"));
         if (!activeTimers) {
             activeTimers = [];
         }
@@ -151,16 +149,16 @@ class Note {
             activeTimers.push({id: this.id, "name": this.name});
         }
 
-        localStorage.setItem(localStoragePrefix + "timers", JSON.stringify(activeTimers));
+        localStorage.setItem(localStoragePrefixParser + "timers", JSON.stringify(activeTimers));
     }
 
     saveAttack() {
-        localStorage.setItem(localStoragePrefix + "timers." + this.id, JSON.stringify([]));
+        localStorage.setItem(localStoragePrefixParser + "timers." + this.id, JSON.stringify([]));
         let data = [];
         for (let attack of this.schedule.attacks) {
             data.push(attack.getStorageObj());
         }
-        localStorage.setItem(localStoragePrefix + "timers." + this.id, JSON.stringify(data));
+        localStorage.setItem(localStoragePrefixParser + "timers." + this.id, JSON.stringify(data));
         console.log(data, "New set of timers");
     }
 }
@@ -489,7 +487,7 @@ let memo = findObjectInArrayByProperty(Memo.tabs, "id", selected);
 let note = new Note(memo.id, memo.title, memo.memo);
 
 Memo.toggleEdit();
-localStorage.setItem(localStoragePrefix + "enableTimer", true);
+localStorage.setItem(localStoragePrefixParser + "enableTimer", true);
 $("#message_" + selected).val(note.text);
 
 $("#submit_memo_" + selected).click();
