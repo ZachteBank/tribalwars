@@ -1,12 +1,21 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.9.3
+// @version      0.9.4
 // @description  try to take over the world!
 // @author       Extremez
+// @updateURL    https://raw.githubusercontent.com/ZachteBank/tribalwars/master/fxUtility/fxutility.user.js
 // @include https://*.tribalwars.nl/*
+// @require https://code.jquery.com/jquery-2.1.4.min.js
+
+// @grant       GM_addStyle
 // @grant       GM_notification
 // ==/UserScript==
+
+$("head").append(
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.3/inputmask.min.js"></script>' +
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.3/jquery.inputmask.min.js"></script>'
+);
 
 const userSettings = {
     maxTimers: 5,
@@ -64,8 +73,9 @@ function createBlockElement() {
 /**
  * START MEMO
  */
+$("#linkContainer").append(" - <a class='toolbarsettings footer-link' href='#'>Fxutility settings</a>");
+
 if (game_data.screen === "memo") {
-    $("#linkContainer").append("<a class='fxutilitysettings' href='#'> - Fxutility settings</a>");
     $(".rename_link").after("<a class='btn parser' href='#'>Genereer timer en link</a>" +
         "<a class='btn fxutilitysettings' href='#'>Genereer link (OUD)</a>");
 }
@@ -80,6 +90,14 @@ $(".parser").on("click", function () {
     $.getScript(parserLink);
 });
 
+/**
+ * END MEMO
+ */
+
+$(document).on("click", ".toolbarsettings", function () {
+    openSettings();
+});
+
 $(document).on("click", ".deleteTimer", function () {
     let memoId = $(this).data("key");
     let hash = $(this).data("hash");
@@ -92,14 +110,19 @@ $(document).on("click", ".deleteTimer", function () {
         data = JSON.parse(data);
     }
 
+    console.log(data, "Deleting row, all timers");
+
     for (let index = 0; index < data.length; index++) {
         const element = data[index];
-        if (hash === element.link.hashCode()) {
+        console.log(hash, "The hash from data key");
+        let generated = getHashCodeFromElement(element);
+        console.log(generated, "The hash that's get generated");
+        if (hash === generated) {
             //console.log(element);
             data[index] = null;
             console.log(data[index]);
             console.log(element, "element to delete");
-            continue;
+            break;
         }
     }
 
@@ -109,9 +132,105 @@ $(document).on("click", ".deleteTimer", function () {
     $(this).closest("tr").remove();
 })
 
-/**
- * END MEMO
- */
+function createDateObject(date, time){
+// str1 format should be dd/mm/yyyy. Separator can be anything e.g. / or -. It wont effect
+    var dt1   = parseInt(date.substring(0,2));
+    var mon1  = parseInt(date.substring(3,5));
+    var yr1   = parseInt(date.substring(6,10));
+
+    var hour   = parseInt(time.substring(0,2));
+    var min  = parseInt(time.substring(3,5));
+    var sec   = parseInt(time.substring(6,8));
+    if(!sec){
+        sec = 0;
+    }
+
+    return new Date(yr1, mon1 - 1, dt1, hour, min, sec);
+}
+
+function openSettings() {
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2, '0');
+    var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+    var yyyy = today.getFullYear();
+
+    today = dd + '-' + mm + '-' + yyyy;
+
+    let html = "<div class=\"popup_box_container\"><div class=\"popup_box show\" id=\"popup_box_popup_command\" style=\"width: 700px;\"><div class=\"popup_box_content\"><a class=\"popup_box_close tooltip-delayed\" href=\"#\">&nbsp;</a><h3>FX settings</h3>\n" +
+        "\n" +
+        "<div class='hiddenWarning' style='display: none'>Vul alles in</div>" +
+        "Datum: " +
+        "<input type='date' placeholder='dd-mm-yyyy' value='"+today+"' name='fxDate' id='fxDate'> " +
+        "<input type='time' placeholder='hh:mm:ss' name='fxTime' id='fxTime'> <br>" +
+        "Link: " +
+        "<input type='url' placeholder='Link' id='fxUrl' name='fxUrl'> <br>" +
+        "<button id='fxButton'>Voeg toe</button>" +
+        "</div></div><div class=\"fader\"></div></div>";
+    $("body").append(html);
+
+    //--- Add datepicker popups to select inputs:
+    //let date = $("#fxDate").inputmask("99-99-9999");
+
+    $("#fxButton").on("click", function () {
+        let date = $("#fxDate").val();
+        let time = $("#fxTime").val();
+        let link = $("#fxUrl").val();
+
+        console.log(date, "Date 1");
+        console.log(time, "time 1");
+        date = createDateObject(date, time);
+        console.log(date, "Date 2");
+
+        if (!date || date.length < 6 || link.length < 6) {
+            $(".hiddenWarning").show();
+            return false;
+        }
+        let combinedData = {date: date, link: link};
+
+        let timers = getAllTimersFromMemoFromStorage(3, "Handmatig");
+        timers.push(combinedData);
+        localStorage.setItem(localStoragePrefix + "timers." + 3, JSON.stringify(timers));
+        location.reload();
+    });
+}
+
+function getAllTimersFromMemoFromStorage(key, defaultName) {
+    let timers = getLocalStorageItem("timers")
+    let found = false;
+    for (const activeTimer of timers) {
+        if (activeTimer.id === key) {
+            activeTimer.name = defaultName;
+            found = true;
+        }
+    }
+    if (!found) {
+        timers.push({id: key, "name": defaultName});
+    }
+    localStorage.setItem(localStoragePrefix + "timers", JSON.stringify(timers));
+
+    return getLocalStorageItem("timers." + key, []);
+
+}
+
+function getLocalStorageItem(key, defaultState = []) {
+    let item = JSON.parse(localStorage.getItem(localStoragePrefix + key));
+    if (!item) {
+        item = defaultState;
+    }
+    return item
+}
+
+function getHashCodeFromElement(element){
+    console.log(element, "Element");
+    if(typeof element.date.getMonth !== 'function'){
+        console.log("Format isnt right");
+        element.date = new Date(element.date);
+    }
+
+    let string = element.date + element.link;
+    console.log(string, "Final string");
+    return string.hashCode();
+}
 
 let enableTimer = localStorage.getItem(localStoragePrefix + "enableTimer");
 if (enableTimer != null && enableTimer === "true") {
@@ -132,7 +251,7 @@ if (enableTimer != null && enableTimer === "true") {
                 newData.push(timer);
             }
         }
-        console.log(newData, "deleted data");
+        console.log(newData, "New data");
         localStorage.setItem(localStoragePrefix + "timers", JSON.stringify(newData));
 
         if (allTimersEmpty) {
@@ -184,7 +303,7 @@ function init(timer) {
 }
 
 function setAlarm(element, memo) {
-    let key = element.link.hashCode();
+    let key = getHashCodeFromElement(element);
     initUiTimer(element, memo, key);
 
     (function (targetDate) {
@@ -212,7 +331,7 @@ function initUiTimer(element, memo, key) {
         "<a title='" + memo.name + "' href='" + element.link + "' class='timer" + key + "'>" +
         "timer" +
         "</a>" +
-        " | <a href='#' data-key='" + memo.id + "' data-hash='" + element.link.hashCode() + "' class='deleteTimer'>del</a>" +
+        " | <a href='#' data-key='" + memo.id + "' data-hash='" + getHashCodeFromElement(element) + "' class='deleteTimer'>del</a>" +
         "</td>" +
         "</tr>")
     $timer[key] = tmpTable.find(".timer" + key);
