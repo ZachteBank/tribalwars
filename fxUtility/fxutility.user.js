@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.9.4
+// @version      0.9.5
 // @description  try to take over the world!
 // @author       Extremez
 // @updateURL    https://raw.githubusercontent.com/ZachteBank/tribalwars/master/fxUtility/fxutility.user.js
@@ -132,16 +132,25 @@ $(document).on("click", ".deleteTimer", function () {
     $(this).closest("tr").remove();
 })
 
-function createDateObject(date, time){
-// str1 format should be dd/mm/yyyy. Separator can be anything e.g. / or -. It wont effect
-    var dt1   = parseInt(date.substring(0,2));
-    var mon1  = parseInt(date.substring(3,5));
-    var yr1   = parseInt(date.substring(6,10));
+function createDateObject(date, time) {
+    // str1 format should be dd/mm/yyyy. Separator can be anything e.g. / or -. It wont effect
+    let dt1, mon1, yr1;
+    if (date.charAt(4) === '-') {
+        yr1 = parseInt(date.substring(0, 4));
+        mon1 = parseInt(date.substring(5, 7));
+        dt1 = parseInt(date.substring(8, 10));
 
-    var hour   = parseInt(time.substring(0,2));
-    var min  = parseInt(time.substring(3,5));
-    var sec   = parseInt(time.substring(6,8));
-    if(!sec){
+    } else {
+        dt1 = parseInt(date.substring(0, 2));
+        mon1 = parseInt(date.substring(3, 5));
+        yr1 = parseInt(date.substring(6, 10));
+
+    }
+
+    var hour = parseInt(time.substring(0, 2));
+    var min = parseInt(time.substring(3, 5));
+    var sec = parseInt(time.substring(6, 8));
+    if (!sec) {
         sec = 0;
     }
 
@@ -160,7 +169,7 @@ function openSettings() {
         "\n" +
         "<div class='hiddenWarning' style='display: none'>Vul alles in</div>" +
         "Datum: " +
-        "<input type='date' placeholder='dd-mm-yyyy' value='"+today+"' name='fxDate' id='fxDate'> " +
+        "<input type='date' placeholder='dd-mm-yyyy' value='" + today + "' name='fxDate' id='fxDate'> " +
         "<input type='time' placeholder='hh:mm:ss' name='fxTime' id='fxTime'> <br>" +
         "Link: " +
         "<input type='url' placeholder='Link' id='fxUrl' name='fxUrl'> <br>" +
@@ -220,9 +229,9 @@ function getLocalStorageItem(key, defaultState = []) {
     return item
 }
 
-function getHashCodeFromElement(element){
+function getHashCodeFromElement(element) {
     console.log(element, "Element");
-    if(typeof element.date.getMonth !== 'function'){
+    if (typeof element.date.getMonth !== 'function') {
         console.log("Format isnt right");
         element.date = new Date(element.date);
     }
@@ -233,7 +242,7 @@ function getHashCodeFromElement(element){
 }
 
 let enableTimer = localStorage.getItem(localStoragePrefix + "enableTimer");
-if (enableTimer != null && enableTimer === "true") {
+if (!enableTimer || enableTimer === "true") {
     createBlockElement();
 
     let data = localStorage.getItem(localStoragePrefix + "timers");
