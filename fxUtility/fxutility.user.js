@@ -492,7 +492,7 @@ function addToFxTimer(sendTime) {
     ///game.php?village=1699&screen=info_village&id=3800
     ///game.php?village=1699&screen=place&target=3800&
     let link = $("#command-data-form > div:nth-child(9) > table:nth-child(1) > tbody > tr:nth-child(2) > td:nth-child(2) > span > a:nth-child(1)").attr("href");
-    if(!link){
+    if(link === undefined){
         link = $("#command-data-form > div:nth-child(8) > table:nth-child(1) > tbody > tr:nth-child(2) > td:nth-child(2) > span > a:nth-child(1)").attr("href");
     }
     console.log(link, "brokenlink")
