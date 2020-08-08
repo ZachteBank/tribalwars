@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.9.5
+// @version      0.9.6
 // @description  try to take over the world!
 // @author       Extremez
 // @updateURL    https://raw.githubusercontent.com/ZachteBank/tribalwars/master/fxUtility/fxutility.user.js
@@ -491,7 +491,11 @@ function addToFxTimer(sendTime) {
     console.log($("#ctx_place"), "target village");
     ///game.php?village=1699&screen=info_village&id=3800
     ///game.php?village=1699&screen=place&target=3800&
-    let link = $("#command-data-form > div:nth-child(8) > table:nth-child(1) > tbody > tr:nth-child(2) > td:nth-child(2) > span > a:nth-child(1)").attr("href");
+    let link = $("#command-data-form > div:nth-child(9) > table:nth-child(1) > tbody > tr:nth-child(2) > td:nth-child(2) > span > a:nth-child(1)").attr("href");
+    if(!link){
+        link = $("#command-data-form > div:nth-child(8) > table:nth-child(1) > tbody > tr:nth-child(2) > td:nth-child(2) > span > a:nth-child(1)").attr("href");
+    }
+    console.log(link, "brokenlink")
     link = link.replace("info_village&id", "place&target");
     data.push({date: date, link: link});
     localStorage.setItem(localStoragePrefix + "timers.2", JSON.stringify(data));
