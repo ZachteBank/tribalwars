@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FXutility timer
 // @namespace    http://tampermonkey.net/
-// @version      0.9.6
+// @version      0.9.6.1
 // @description  try to take over the world!
 // @author       Extremez
 // @updateURL    https://raw.githubusercontent.com/ZachteBank/tribalwars/master/fxUtility/fxutility.user.js
